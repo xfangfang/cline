@@ -1,5 +1,6 @@
-import { VSCodeCheckbox, VSCodeLink } from "@vscode/webview-ui-toolkit/react"
+import { VSCodeCheckbox, VSCodeLink, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useState } from "react"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import PreferredLanguageSetting from "../PreferredLanguageSetting"
 import Section from "../Section"
@@ -10,7 +11,31 @@ interface GeneralSettingsSectionProps {
 }
 
 const GeneralSettingsSection = ({ renderSectionHeader }: GeneralSettingsSectionProps) => {
-	const { telemetrySetting, remoteConfigSettings } = useExtensionState()
+	const { telemetrySetting, remoteConfigSettings, maxRetryAttempts } = useExtensionState()
+	const [retryInputValue, setRetryInputValue] = useState((maxRetryAttempts ?? 3).toString())
+	const [retryInputError, setRetryInputError] = useState<string | null>(null)
+
+	const handleRetryAttemptsChange = (event: Event) => {
+		const target = event.target as HTMLInputElement
+		const value = target.value
+		setRetryInputValue(value)
+
+		const num = parseInt(value, 10)
+		if (Number.isNaN(num) || num < 0) {
+			setRetryInputError("Please enter a non-negative integer")
+			return
+		}
+
+		setRetryInputError(null)
+		updateSetting("maxRetryAttempts", num)
+	}
+
+	const handleRetryInputBlur = () => {
+		if (retryInputError) {
+			setRetryInputValue((maxRetryAttempts ?? 3).toString())
+			setRetryInputError(null)
+		}
+	}
 
 	return (
 		<div>
@@ -58,6 +83,22 @@ const GeneralSettingsSection = ({ renderSectionHeader }: GeneralSettingsSectionP
 							privacy policy
 						</VSCodeLink>{" "}
 						for more details.
+					</p>
+				</div>
+
+				<div className="mb-[5px]">
+					<label className="font-medium block mb-1">API Request Retry Attempts</label>
+					<VSCodeTextField
+						className="w-full"
+						onBlur={handleRetryInputBlur}
+						onChange={(event) => handleRetryAttemptsChange(event as Event)}
+						placeholder="Enter number of retry attempts"
+						value={retryInputValue}
+					/>
+					{retryInputError && <div className="text-(--vscode-errorForeground) text-xs mt-1">{retryInputError}</div>}
+					<p className="text-xs text-(--vscode-descriptionForeground) mt-1">
+						Number of times Cline will automatically retry a failed API request before asking you to intervene. Set
+						to 0 to disable automatic retries.
 					</p>
 				</div>
 			</Section>

@@ -256,6 +256,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		terminalOutputLineLimit: 500,
 		maxConsecutiveMistakes: 3,
 		defaultTerminalProfile: "default",
+		maxRetryAttempts: 3,
 		isNewUser: false,
 		welcomeViewCompleted: false,
 		onboardingModels: undefined,

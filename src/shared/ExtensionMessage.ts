@@ -65,6 +65,7 @@ export interface ExtensionState {
 	maxConsecutiveMistakes: number
 	defaultTerminalProfile?: string
 	vscodeTerminalExecutionMode: string
+	maxRetryAttempts: number
 	backgroundCommandRunning?: boolean
 	backgroundCommandTaskId?: string
 	lastCompletedCommandTs?: number
