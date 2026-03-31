@@ -109,6 +109,7 @@ message Secrets {
 // in src/shared/storage/state-keys.ts and use the scripts/generate-state-proto.mjs
 // script to regenerate this list.
 message Settings {
+  optional int32 max_retry_attempts = 183;
   optional string lite_llm_base_url = 1;
   optional bool lite_llm_use_prompt_cache = 2;
   optional string anthropic_base_url = 4;
@@ -365,6 +366,7 @@ message UpdateTaskSettingsRequest {
 
 // Message for updating settings
 message UpdateSettingsRequest {
+  optional int32 max_retry_attempts = 43;
   reserved 15; // was openai_reasoning_effort (moved to mode-scoped reasoning effort)
   reserved 23; // was dictation_settings (dictation removed)
   reserved 38; // was skills_enabled (removed - now always enabled)
@@ -372,6 +374,7 @@ message UpdateSettingsRequest {
   reserved 9; // was terminal_reuse_enabled
   reserved 12; // was terminal_output_line_limit
   reserved 21; // was default_terminal_profile
+
 
   Metadata metadata = 1;
   optional ModelsApiConfiguration api_configuration = 2;
@@ -407,6 +410,10 @@ message UpdateSettingsRequest {
   optional bool double_check_completion_enabled = 41;
   optional bool show_feature_tips = 42;
   optional bool lazy_teammate_mode_enabled = 43;
+}
+
+message UpdateTerminalConnectionTimeoutRequest {
+  optional int32 timeout_ms = 1;
 }
 
 message FocusChainSettings {

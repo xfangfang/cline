@@ -60,6 +60,7 @@ export interface ExtensionState {
 	taskHistory: HistoryItem[]
 	telemetrySetting: TelemetrySetting
 	maxConsecutiveMistakes: number
+	maxRetryAttempts: number
 	backgroundCommandRunning?: boolean
 	backgroundCommandTaskId?: string
 	lastCompletedCommandTs?: number

@@ -866,6 +866,7 @@ export class Controller {
 		const customPrompt = this.stateManager.getGlobalSettingsKey("customPrompt")
 		const mcpResponsesCollapsed = this.stateManager.getGlobalStateKey("mcpResponsesCollapsed")
 		const maxConsecutiveMistakes = this.stateManager.getGlobalSettingsKey("maxConsecutiveMistakes")
+		const maxRetryAttempts = this.stateManager.getGlobalSettingsKey("maxRetryAttempts")
 		const favoritedModelIds = this.stateManager.getGlobalStateKey("favoritedModelIds")
 		const lastDismissedInfoBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedInfoBannerVersion") || 0
 		const lastDismissedModelBannerVersion = this.stateManager.getGlobalStateKey("lastDismissedModelBannerVersion") || 0
@@ -946,6 +947,7 @@ export class Controller {
 			onboardingModels,
 			mcpResponsesCollapsed,
 			maxConsecutiveMistakes,
+			maxRetryAttempts,
 			customPrompt,
 			taskHistory: processedTaskHistory,
 			shouldShowAnnouncement,

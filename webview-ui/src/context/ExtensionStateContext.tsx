@@ -249,6 +249,7 @@ export const ExtensionStateContextProvider: React.FC<{
 		localWorkflowToggles: {},
 		globalWorkflowToggles: {},
 		maxConsecutiveMistakes: 3,
+		maxRetryAttempts: 3,
 		isNewUser: false,
 		welcomeViewCompleted: false,
 		onboardingModels: undefined,

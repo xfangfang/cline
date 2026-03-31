@@ -109,6 +109,11 @@ export async function updateSettings(controller: Controller, request: UpdateSett
 			controller.stateManager.setGlobalState("maxConsecutiveMistakes", Number(request.maxConsecutiveMistakes))
 		}
 
+		// Update max retry attempts
+		if (request.maxRetryAttempts !== undefined) {
+			controller.stateManager.setGlobalState("maxRetryAttempts", Number(request.maxRetryAttempts))
+		}
+
 		// Update strict plan mode setting
 		if (request.strictPlanModeEnabled !== undefined) {
 			controller.stateManager.setGlobalState("strictPlanModeEnabled", request.strictPlanModeEnabled)
