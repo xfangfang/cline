@@ -63,6 +63,7 @@ export interface ExtensionState {
 	terminalReuseEnabled?: boolean
 	terminalOutputLineLimit: number
 	maxConsecutiveMistakes: number
+	maxRetryAttempts: number
 	defaultTerminalProfile?: string
 	vscodeTerminalExecutionMode: string
 	backgroundCommandRunning?: boolean

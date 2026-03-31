@@ -2087,8 +2087,9 @@ export class Task {
 
 				let response: ClineAskResponse
 				// Skip auto-retry for Cline provider insufficient credits or auth errors
-				if (!isClineProviderInsufficientCredits && !isAuthError && this.taskState.autoRetryAttempts < 3) {
-					// Auto-retry enabled with max 3 attempts: automatically approve the retry
+				const maxRetryAttempts = this.stateManager.getGlobalSettingsKey("maxRetryAttempts")
+				if (!isClineProviderInsufficientCredits && !isAuthError && this.taskState.autoRetryAttempts < maxRetryAttempts) {
+					// Auto-retry enabled: automatically approve the retry
 					this.taskState.autoRetryAttempts++
 
 					// Calculate delay: 2s, 4s, 8s
@@ -2114,7 +2115,7 @@ export class Task {
 						"error_retry",
 						JSON.stringify({
 							attempt: this.taskState.autoRetryAttempts,
-							maxAttempts: 3,
+							maxAttempts: maxRetryAttempts,
 							delaySeconds: delay / 1000,
 							errorMessage: streamingFailedMessage,
 						}),
@@ -2142,8 +2143,8 @@ export class Task {
 						await this.say(
 							"error_retry",
 							JSON.stringify({
-								attempt: 3,
-								maxAttempts: 3,
+								attempt: maxRetryAttempts,
+								maxAttempts: maxRetryAttempts,
 								delaySeconds: 0,
 								failed: true, // Special flag to indicate retries exhausted
 								errorMessage: streamingFailedMessage,
@@ -2995,7 +2996,8 @@ export class Task {
 					const clineError = ErrorService.get().toClineError(error, this.api.getModel().id)
 					const errorMessage = clineError.serialize()
 					// Auto-retry for streaming failures (always enabled)
-					if (this.taskState.autoRetryAttempts < 3) {
+					const maxRetryAttempts = this.stateManager.getGlobalSettingsKey("maxRetryAttempts")
+					if (this.taskState.autoRetryAttempts < maxRetryAttempts) {
 						this.taskState.autoRetryAttempts++
 
 						// Calculate exponential backoff for streaming failures: 2s, 4s, 8s
@@ -3006,7 +3008,7 @@ export class Task {
 							"error_retry",
 							JSON.stringify({
 								attempt: this.taskState.autoRetryAttempts,
-								maxAttempts: 3,
+								maxAttempts: maxRetryAttempts,
 								delaySeconds: delay / 1000,
 								errorMessage,
 							}),
@@ -3021,13 +3023,13 @@ export class Task {
 								await this.controller.task.handleWebviewAskResponse("yesButtonClicked", "", [])
 							}
 						})
-					} else if (this.taskState.autoRetryAttempts >= 3) {
+					} else if (this.taskState.autoRetryAttempts >= maxRetryAttempts) {
 						// Show error_retry with failed flag to indicate all retries exhausted
 						await this.say(
 							"error_retry",
 							JSON.stringify({
-								attempt: 3,
-								maxAttempts: 3,
+								attempt: maxRetryAttempts,
+								maxAttempts: maxRetryAttempts,
 								delaySeconds: 0,
 								failed: true, // Special flag to indicate retries exhausted
 								errorMessage,
@@ -3248,8 +3250,9 @@ export class Task {
 
 				const noResponseErrorMessage = "No assistant message was received. Would you like to retry the request?"
 
-				if (this.taskState.autoRetryAttempts < 3) {
-					// Auto-retry enabled with max 3 attempts: automatically approve the retry
+				const maxRetryAttempts = this.stateManager.getGlobalSettingsKey("maxRetryAttempts")
+				if (this.taskState.autoRetryAttempts < maxRetryAttempts) {
+					// Auto-retry enabled: automatically approve the retry
 					this.taskState.autoRetryAttempts++
 
 					// Calculate delay: 2s, 4s, 8s
@@ -3259,19 +3262,19 @@ export class Task {
 						"error_retry",
 						JSON.stringify({
 							attempt: this.taskState.autoRetryAttempts,
-							maxAttempts: 3,
+							maxAttempts: maxRetryAttempts,
 							delaySeconds: delay / 1000,
 							errorMessage: noResponseErrorMessage,
 						}),
 					)
 					await setTimeoutPromise(delay)
 				} else {
-					// Max retries exhausted (>= 3 attempts), ask user
+					// Max retries exhausted, ask user
 					await this.say(
 						"error_retry",
 						JSON.stringify({
-							attempt: 3,
-							maxAttempts: 3,
+							attempt: maxRetryAttempts,
+							maxAttempts: maxRetryAttempts,
 							delaySeconds: 0,
 							failed: true, // Special flag to indicate retries exhausted
 							errorMessage: noResponseErrorMessage,
