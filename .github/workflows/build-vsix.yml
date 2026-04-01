@@ -1,0 +1,46 @@
+name: "Build VSIX"
+
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - "copilot/**"
+            - "fork/**"
+
+jobs:
+    build:
+        name: Build Extension (.vsix)
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+
+            - name: Install root dependencies
+              run: npm install --include=optional
+
+            - name: Install webview-ui dependencies
+              run: cd webview-ui && npm install --include=optional
+
+            - name: Install vsce
+              run: npm install -g @vscode/vsce
+
+            - name: Get Version
+              id: get_version
+              run: |
+                  VERSION=$(node -p "require('./package.json').version")
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+            - name: Package Extension
+              run: vsce package --allow-package-secrets sendgrid --out "cline-${{ steps.get_version.outputs.version }}.vsix"
+
+            - name: Upload VSIX Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: cline-${{ steps.get_version.outputs.version }}-${{ github.sha }}
+                  path: "*.vsix"
+                  retention-days: 30
