@@ -109,7 +109,7 @@ message Secrets {
 // in src/shared/storage/state-keys.ts and use the scripts/generate-state-proto.mjs
 // script to regenerate this list.
 message Settings {
-  optional int32 max_retry_attempts = 183;
+  optional int32 max_retry_attempts = 50183;
   optional string lite_llm_base_url = 1;
   optional bool lite_llm_use_prompt_cache = 2;
   optional string anthropic_base_url = 4;
@@ -366,7 +366,7 @@ message UpdateTaskSettingsRequest {
 
 // Message for updating settings
 message UpdateSettingsRequest {
-  optional int32 max_retry_attempts = 43;
+  optional int32 max_retry_attempts = 50043;
   reserved 15; // was openai_reasoning_effort (moved to mode-scoped reasoning effort)
   reserved 23; // was dictation_settings (dictation removed)
   reserved 38; // was skills_enabled (removed - now always enabled)
