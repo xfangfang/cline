@@ -56,3 +56,7 @@ evals/smoke-tests/results/
 secrets.json
 tui-traces
 tests/**/cache
+
+# JetBrains plugin Gradle build outputs
+jetbrains/.gradle/
+jetbrains/build/

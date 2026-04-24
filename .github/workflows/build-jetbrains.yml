@@ -1,62 +1,120 @@
-name: "Build JetBrains Plugin"
+# GitHub Actions Workflow for building and verifying the Cline JetBrains plugin.
+# Based on the JetBrains IntelliJ Platform Plugin Template:
+# https://github.com/JetBrains/intellij-platform-plugin-template
+#
+# Steps:
+# - Build the plugin with `./gradlew buildPlugin`
+# - Run plugin verification with `./gradlew verifyPlugin`
+# - Upload the built plugin ZIP as an artifact
+
+name: Build JetBrains Plugin
 
 on:
     workflow_dispatch:
-        inputs:
-            ref:
-                description: "Branch, tag, or commit SHA to build from (defaults to current branch)"
-                required: false
-                type: string
     push:
         branches:
             - "copilot/**"
             - "fork/**"
+        paths:
+            - "jetbrains/**"
+            - ".github/workflows/build-jetbrains.yml"
+    pull_request:
+        paths:
+            - "jetbrains/**"
+            - ".github/workflows/build-jetbrains.yml"
 
-permissions:
-    contents: read
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
 
 jobs:
-    trigger-build:
-        name: Trigger JetBrains Plugin Build
+    # Build the plugin and upload the artifact
+    build:
+        name: Build
         runs-on: ubuntu-latest
 
         steps:
-            - name: Generate GitHub App Token
-              id: app-token
-              uses: actions/create-github-app-token@v1
+            # Free GitHub Actions Environment Disk Space
+            - name: Maximize Build Space
+              uses: jlumbroso/free-disk-space@v1.3.1
               with:
-                  app-id: 1998650
-                  private-key: ${{ secrets.CLINE_JETBRAINS_WORKFLOW_KEY }}
-                  owner: cline
-                  repositories: intellij-plugin
+                  tool-cache: false
+                  large-packages: false
 
-            - name: Trigger JetBrains Plugin Build
-              env:
-                  BRANCH_NAME: ${{ inputs.ref || github.ref_name }}
-                  COMMIT_SHA: ${{ github.sha }}
-              run: |
-                  BRANCH_NAME_JSON=$(jq -n --arg b "$BRANCH_NAME" '$b')
-                  curl -X POST \
-                    -H "Authorization: Bearer ${{ steps.app-token.outputs.token }}" \
-                    -H "Accept: application/vnd.github.v3+json" \
-                    -H "User-Agent: cline-build-trigger" \
-                    -H "Content-Type: application/json" \
-                    https://api.github.com/repos/cline/intellij-plugin/dispatches \
-                    -d @- <<EOF
-                  {
-                    "event_type": "cline-build-request",
-                    "client_payload": {
-                      "branch_name": $BRANCH_NAME_JSON,
-                      "sha": "$COMMIT_SHA",
-                      "triggered_by": "${{ github.actor }}",
-                      "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }
-                  }
-                  EOF
+            - name: Fetch Sources
+              uses: actions/checkout@v4
 
-            - name: Log trigger details
+            # Set up Java 21 (required by IntelliJ Platform Gradle Plugin)
+            - name: Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: zulu
+                  java-version: 21
+
+            # Setup Gradle with caching
+            - name: Setup Gradle
+              uses: gradle/actions/setup-gradle@v4
+
+            # Build the plugin
+            - name: Build Plugin
+              working-directory: jetbrains
+              run: ./gradlew buildPlugin
+
+            # Prepare plugin artifact for upload
+            - name: Prepare Plugin Artifact
+              id: artifact
+              shell: bash
+              working-directory: jetbrains
               run: |
-                  echo "Triggered JetBrains plugin build for:"
-                  echo "  Branch: ${{ inputs.ref || github.ref_name }}"
-                  echo "  SHA: ${{ github.sha }}"
-                  echo "  Triggered by: ${{ github.actor }}"
+                  cd build/distributions
+                  FILENAME=$(ls *.zip)
+                  unzip "$FILENAME" -d content
+                  echo "filename=${FILENAME:0:-4}" >> $GITHUB_OUTPUT
+
+            # Upload the built plugin ZIP
+            - name: Upload Plugin Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ steps.artifact.outputs.filename }}
+                  path: jetbrains/build/distributions/content/*/*
+                  retention-days: 30
+
+    # Run plugin structural verification
+    verify:
+        name: Verify Plugin
+        needs: [build]
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Maximize Build Space
+              uses: jlumbroso/free-disk-space@v1.3.1
+              with:
+                  tool-cache: false
+                  large-packages: false
+
+            - name: Fetch Sources
+              uses: actions/checkout@v4
+
+            - name: Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: zulu
+                  java-version: 21
+
+            - name: Setup Gradle
+              uses: gradle/actions/setup-gradle@v4
+              with:
+                  cache-read-only: true
+
+            # Run IntelliJ Plugin Verifier
+            - name: Run Plugin Verification
+              working-directory: jetbrains
+              run: ./gradlew verifyPlugin
+
+            # Collect Plugin Verifier results
+            - name: Collect Plugin Verifier Result
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: pluginVerifier-result
+                  path: jetbrains/build/reports/pluginVerifier
