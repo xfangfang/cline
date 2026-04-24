@@ -1,0 +1,62 @@
+name: "Build JetBrains Plugin"
+
+on:
+    workflow_dispatch:
+        inputs:
+            ref:
+                description: "Branch, tag, or commit SHA to build from (defaults to current branch)"
+                required: false
+                type: string
+    push:
+        branches:
+            - "copilot/**"
+            - "fork/**"
+
+permissions:
+    contents: read
+
+jobs:
+    trigger-build:
+        name: Trigger JetBrains Plugin Build
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Generate GitHub App Token
+              id: app-token
+              uses: actions/create-github-app-token@v1
+              with:
+                  app-id: 1998650
+                  private-key: ${{ secrets.CLINE_JETBRAINS_WORKFLOW_KEY }}
+                  owner: cline
+                  repositories: intellij-plugin
+
+            - name: Trigger JetBrains Plugin Build
+              env:
+                  BRANCH_NAME: ${{ inputs.ref || github.ref_name }}
+                  COMMIT_SHA: ${{ github.sha }}
+              run: |
+                  BRANCH_NAME_JSON=$(jq -n --arg b "$BRANCH_NAME" '$b')
+                  curl -X POST \
+                    -H "Authorization: Bearer ${{ steps.app-token.outputs.token }}" \
+                    -H "Accept: application/vnd.github.v3+json" \
+                    -H "User-Agent: cline-build-trigger" \
+                    -H "Content-Type: application/json" \
+                    https://api.github.com/repos/cline/intellij-plugin/dispatches \
+                    -d @- <<EOF
+                  {
+                    "event_type": "cline-build-request",
+                    "client_payload": {
+                      "branch_name": $BRANCH_NAME_JSON,
+                      "sha": "$COMMIT_SHA",
+                      "triggered_by": "${{ github.actor }}",
+                      "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  }
+                  EOF
+
+            - name: Log trigger details
+              run: |
+                  echo "Triggered JetBrains plugin build for:"
+                  echo "  Branch: ${{ inputs.ref || github.ref_name }}"
+                  echo "  SHA: ${{ github.sha }}"
+                  echo "  Triggered by: ${{ github.actor }}"
